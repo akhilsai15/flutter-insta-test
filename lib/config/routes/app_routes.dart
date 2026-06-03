@@ -29,5 +29,13 @@ class Go {
     }
   }
 
-  Future<bool> back() => Navigator.maybePop(context);
+  // FIND THE OLD back() METHOD AND REPLACE IT WITH THIS:
+  Future<bool> back() async {
+    if (isThatMobile) {
+      return Navigator.maybePop(context);
+    } else {
+      Get.back(); // Dismisses GetX stacked layout views correctly on Web
+      return true;
+    }
+  }
 }

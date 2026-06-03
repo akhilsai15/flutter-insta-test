@@ -346,9 +346,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
           if (state is SearchAboutUserBlocLoaded) {
             usersWithSameUserName = state.users;
           }
-          bool isIExist = usersWithSameUserName.contains(userInfo);
+          
+          // FIX: Check if the username is taken by a DIFFERENT unique user ID
+          bool isTakenByOthers = usersWithSameUserName.any((user) => user.userId != userInfo.userId);
+          
           WidgetsBinding.instance.addPostFrameCallback((_) => setState(() {
-                validateEdits = isIExist || usersWithSameUserName.isEmpty;
+                validateEdits = !isTakenByOthers; // Valid if not claimed by anyone else
                 userNameChanging = userNameController.text != userInfo.userName;
               }));
           return userNameTextFormField(
@@ -360,7 +363,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
       ),
     );
   }
-
   TextFormField userNameTextFormField(
       TextEditingController controller, String text,
       {required bool uniqueUserName}) {
