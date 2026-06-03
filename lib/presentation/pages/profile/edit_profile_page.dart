@@ -38,11 +38,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
       TextEditingController(text: "");
   TextEditingController bioController = TextEditingController(text: "");
   late UserPersonalInfo userInfo;
+  String selectedGender = "Prefer not to say"; // Track gender state transitions safely
 
   bool reBuild = false;
   bool isImageChanged = false;
   bool userNameChanging = false;
   bool validateEdits = true;
+  
   @override
   void dispose() {
     isImageUpload.dispose();
@@ -55,6 +57,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     nameController = TextEditingController(text: userInfo.name);
     userNameController = TextEditingController(text: userInfo.userName);
     bioController = TextEditingController(text: userInfo.bio);
+    selectedGender = userInfo.gender.isEmpty ? "Prefer not to say" : userInfo.gender; // Safely decode incoming values or assign default
 
     super.initState();
   }
@@ -132,77 +135,83 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   List<Widget> actionsWidgets(
-      dynamic getUserState, UserInfoCubit updateUserCubit) {
-    return [
-      if (validateEdits) ...[
-        getUserState is CubitUserLoading
-            ? Transform.scale(
-                scaleY: 1,
-                scaleX: 1.2,
-                child: const CustomCircularProgress(ColorManager.blue))
-            : ValueListenableBuilder(
-                valueListenable: isImageUpload,
-                builder: (context, bool isImageUploadValue, child) =>
-                    IconButton(
-                  onPressed: () async {
-                    bool isNameChanged = nameController.text == userInfo.name;
-                    bool isUserNameChanged =
-                        userNameController.text == userInfo.userName;
-                    bool isBioChanged = bioController.text == userInfo.bio;
+        dynamic getUserState, UserInfoCubit updateUserCubit) {
+      return [
+        if (validateEdits) ...[
+          getUserState is! CubitMyPersonalInfoLoaded
+              ? Transform.scale(
+                  scaleY: 1,
+                  scaleX: 1.2,
+                  child: const CustomCircularProgress(ColorManager.blue))
+              : ValueListenableBuilder(
+                  valueListenable: isImageUpload,
+                  builder: (context, bool isImageUploadValue, child) =>
+                      IconButton(
+                    onPressed: () async {
+                      bool isNameChanged = nameController.text == userInfo.name;
+                      bool isUserNameChanged =
+                          userNameController.text == userInfo.userName;
+                      bool isBioChanged = bioController.text == userInfo.bio;
+                      bool isGenderChanged = selectedGender != userInfo.gender;
 
-                    if (isBioChanged &&
-                        isUserNameChanged &&
-                        isNameChanged &&
-                        !isImageChanged) {
-                      Go(context).back();
-                    }
-
-                    if (isImageUploadValue) {
-                      reBuild = true;
-                      List<dynamic> charactersOfName = [];
-                      String name = nameController.text.toLowerCase();
-                      for (int i = 0; i < name.length; i++) {
-                        charactersOfName =
-                            charactersOfName + [name.substring(0, i + 1)];
+                      // If absolutely nothing changed, go back and exit method immediately
+                      if (isBioChanged &&
+                          isUserNameChanged &&
+                          isNameChanged &&
+                          !isImageChanged &&
+                          !isGenderChanged) {
+                        Go(context).back();
+                        return; // <--- ADD THIS RETURN STATEMENT
                       }
-                      UserPersonalInfo updatedUserInfo = UserPersonalInfo(
-                        followerPeople: userInfo.followerPeople,
-                        followedPeople: userInfo.followedPeople,
-                        posts: userInfo.posts,
-                        userName: userNameController.text,
-                        name: nameController.text,
-                        bio: bioController.text,
-                        profileImageUrl: userInfo.profileImageUrl,
-                        email: userInfo.email,
-                        charactersOfName: charactersOfName,
-                        stories: userInfo.stories,
-                        userId: userInfo.userId,
-                        deviceToken: userInfo.deviceToken,
-                        lastThreePostUrls: userInfo.lastThreePostUrls,
-                        chatsOfGroups: userInfo.chatsOfGroups,
-                      );
-                      await updateUserCubit
-                          .updateUserInfo(updatedUserInfo)
-                          .whenComplete(() {
-                        Future.delayed(Duration.zero, () {
-                          reBuild = false;
 
-                          if (context.mounted) Go(context).back();
+                      if (isImageUploadValue) {
+                        reBuild = true;
+                        List<dynamic> charactersOfName = [];
+                        String name = nameController.text.toLowerCase();
+                        for (int i = 0; i < name.length; i++) {
+                          charactersOfName =
+                              charactersOfName + [name.substring(0, i + 1)];
+                        }
+                        UserPersonalInfo updatedUserInfo = UserPersonalInfo(
+                          followerPeople: userInfo.followerPeople,
+                          followedPeople: userInfo.followedPeople,
+                          posts: userInfo.posts,
+                          userName: userNameController.text,
+                          name: nameController.text,
+                          bio: bioController.text,
+                          gender: selectedGender, // Saves the new gender state selection string
+                          profileImageUrl: userInfo.profileImageUrl,
+                          email: userInfo.email,
+                          charactersOfName: charactersOfName,
+                          stories: userInfo.stories,
+                          userId: userInfo.userId,
+                          deviceToken: userInfo.deviceToken,
+                          lastThreePostUrls: userInfo.lastThreePostUrls,
+                          chatsOfGroups: userInfo.chatsOfGroups,
+                        );
+                        
+                        // Trigger Firestore operation via BloC/Cubit pattern
+                        await updateUserCubit
+                            .updateUserInfo(updatedUserInfo)
+                            .whenComplete(() {
+                          Future.delayed(Duration.zero, () {
+                            reBuild = false;
+                            if (context.mounted) Go(context).back();
+                          });
                         });
-                      });
-                    }
-                  },
-                  icon: checkIcon(false),
-                ),
-              )
-      ] else ...[
-        Padding(
-          padding: const EdgeInsetsDirectional.only(end: 8.5),
-          child: checkIcon(true),
-        )
-      ],
-    ];
-  }
+                      }
+                    },
+                    icon: checkIcon(false),
+                  ),
+                )
+        ] else ...[
+          Padding(
+            padding: const EdgeInsetsDirectional.only(end: 8.5),
+            child: checkIcon(true),
+          )
+        ],
+      ];
+    }
 
   Icon checkIcon(bool light) {
     return Icon(Icons.check_rounded,
@@ -250,13 +259,35 @@ class _EditProfilePageState extends State<EditProfilePage> {
         const SizedBox(height: 10),
         textFormField(bioController, StringsManager.bio.tr),
         const SizedBox(height: 15),
+        
+        // Render selector widget list seamlessly without cursorColor configuration parameters
+        DropdownButtonFormField<String>(
+          value: ['Male', 'Female', 'Transgender', 'Custom', 'Prefer not to say'].contains(selectedGender) 
+              ? selectedGender 
+              : 'Prefer not to say',
+          dropdownColor: Theme.of(context).primaryColor,
+          style: getNormalStyle(color: Theme.of(context).focusColor, fontSize: 15),
+          decoration: InputDecoration(
+            labelText: "Gender",
+            labelStyle: getNormalStyle(color: ColorManager.grey),
+          ),
+          items: ['Male', 'Female', 'Transgender', 'Custom', 'Prefer not to say']
+              .map((label) => DropdownMenuItem(
+                    value: label,
+                    child: Text(label),
+                  ))
+              .toList(),
+          onChanged: (value) {
+            setState(() {
+              selectedGender = value ?? 'Prefer not to say';
+            });
+          },
+        ),
+        
+        const SizedBox(height: 15),
         const Divider(),
         const SizedBox(height: 8),
         GestureDetector(
-          onTap: () {
-          // Add your navigation or modular sheet logic here
-          ToastShow.toast("Personal Information Settings clicked");
-        },
           child: Text(
             StringsManager.personalInformationSettings.tr,
             style: getNormalStyle(fontSize: 18, color: ColorManager.blue),

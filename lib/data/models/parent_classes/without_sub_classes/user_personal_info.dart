@@ -8,6 +8,7 @@ class UserPersonalInfo extends Equatable {
   String name;
   String profileImageUrl;
   String userName;
+  String gender; // Integrated gender property field token
   dynamic userId;
   List<dynamic> followedPeople;
   List<dynamic> followerPeople;
@@ -21,6 +22,7 @@ class UserPersonalInfo extends Equatable {
   int numberOfNewMessages;
   String channelId;
   List<dynamic> lastThreePostUrls;
+
   UserPersonalInfo({
     required this.followedPeople,
     required this.followerPeople,
@@ -37,6 +39,7 @@ class UserPersonalInfo extends Equatable {
     this.email = "",
     this.profileImageUrl = "",
     this.userName = "",
+    this.gender = "Prefer not to say", // Standard default option
     this.userId = "",
     this.numberOfNewNotifications = 0,
     this.numberOfNewMessages = 0,
@@ -49,6 +52,7 @@ class UserPersonalInfo extends Equatable {
       email: snap?["email"] ?? "",
       profileImageUrl: snap?["profileImageUrl"] ?? "",
       userName: snap?["userName"] ?? "",
+      gender: snap?["gender"] ?? "Prefer not to say", // Populates model instance matching map database keys
       userId: snap?["uid"] ?? "",
       followedPeople: snap?["following"] ?? [],
       followerPeople: snap?["followers"] ?? [],
@@ -75,6 +79,7 @@ class UserPersonalInfo extends Equatable {
         'bio': bio,
         'email': email,
         'profileImageUrl': profileImageUrl,
+        'gender': gender, // Serializes parameter field value safely to Firestore payload map data structures
         'charactersOfName': charactersOfName,
         'uid': userId,
         'numberOfNewNotifications': numberOfNewNotifications,
@@ -91,6 +96,7 @@ class UserPersonalInfo extends Equatable {
         name,
         profileImageUrl,
         userName,
+        gender, // Included in value comparisons structures definition lists safely
         userId,
         followedPeople,
         followerPeople,

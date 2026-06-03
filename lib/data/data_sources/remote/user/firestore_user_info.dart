@@ -158,7 +158,6 @@ class FireStoreUser {
   }
 
   /// [fieldName] , [userUid] in case one of this users not exist, it will be deleted from the list in fireStore
-
   static Future<List<UserPersonalInfo>> getSpecificUsersInfo({
     String fieldName = "",
     required List<dynamic> usersIds,
