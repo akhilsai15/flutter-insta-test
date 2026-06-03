@@ -98,9 +98,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       UserInfoCubit updateUserCubit) {
     return Scaffold(
       backgroundColor: Theme.of(context).primaryColor,
-      appBar: isThatMobile
-          ? buildAppBar(context, getUserState, updateUserCubit)
-          : null,
+      appBar: buildAppBar(context, getUserState, updateUserCubit),
       body: Column(
         children: [
           circleAvatarAndTextFields(context, updateUserCubit),
@@ -137,7 +135,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       dynamic getUserState, UserInfoCubit updateUserCubit) {
     return [
       if (validateEdits) ...[
-        getUserState is! CubitMyPersonalInfoLoaded
+        getUserState is CubitUserLoading
             ? Transform.scale(
                 scaleY: 1,
                 scaleX: 1.2,
@@ -255,6 +253,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
         const Divider(),
         const SizedBox(height: 8),
         GestureDetector(
+          onTap: () {
+          // Add your navigation or modular sheet logic here
+          ToastShow.toast("Personal Information Settings clicked");
+        },
           child: Text(
             StringsManager.personalInformationSettings.tr,
             style: getNormalStyle(fontSize: 18, color: ColorManager.blue),
